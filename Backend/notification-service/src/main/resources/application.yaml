@@ -1,0 +1,69 @@
+server:
+  port: 8082
+  address: 0.0.0.0
+  servlet:
+    context-path: /notification
+
+spring:
+  application:
+    name: notification-service
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://root:root@localhost:27017/notification-service?authSource=admin}
+
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: blur.socialnetwork@gmail.com
+    password: andb wbaq ndls fadn
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+app:
+  service:
+    profile:
+      url: ${PROFILE_SERVICE_URL:http://localhost:8081/profile}
+
+logging:
+  level:
+    com.blur.notificationservice: DEBUG
+
+management:
+  endpoints:
+    web:
+      cors:
+        allowed-origins: http://localhost:3000
+        allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+        allowed-headers: "*"
+        allow-credentials: true
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

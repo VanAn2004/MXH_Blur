@@ -1,0 +1,112 @@
+server:
+  port: 8888
+  address: 0.0.0.0
+
+app:
+  api-prefix: /api
+  services:
+    identity: "${IDENTITY_SERVICE_URL:http://localhost:8080}/identity"
+    profile: "${PROFILE_SERVICE_URL:http://localhost:8081}/profile"
+    notification: "${NOTIFICATION_SERVICE_URL:http://localhost:8082}/notification"
+    post: "${POST_SERVICE_URL:http://localhost:8084}/post"
+    story: "${STORY_SERVICE_URL:http://localhost:8086}/story"
+    chat: "${CHAT_SERVICE_URL:http://localhost:8083}/chat"
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "${CORS_ALLOWED_ORIGIN:http://localhost}"
+            allowedMethods:
+              - "GET"
+              - "POST"
+              - "PUT"
+              - "DELETE"
+              - "PATCH"
+              - "OPTIONS"
+            allowedHeaders:
+              - "${CORS_ALLOWED_HEADERS:*}"
+            allowCredentials: true
+            exposedHeaders:  # ⭐ CHỈ THÊM DÒNG NÀY
+              - "Authorization"
+              - "Content-Type"
+            maxAge: 3600
+      httpclient:
+        pool:
+          type: elastic
+        wiretap: false
+      routes:
+        - id: identity_service
+          uri: ${IDENTITY_SERVICE_URL:http://localhost:8080}
+          predicates:
+            - Path=${app.api-prefix}/identity/**
+          filters:
+            - StripPrefix=1
+
+        - id: profile_service
+          uri: ${PROFILE_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=${app.api-prefix}/profile/**
+          filters:
+            - StripPrefix=1
+
+        - id: notification_websocket
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/notification/ws-notification/**
+          filters:
+              - StripPrefix=2
+
+        - id: notification_service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=${app.api-prefix}/notification/**
+          filters:
+            - StripPrefix=1
+
+        - id: chat_service
+          uri: ${CHAT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=${app.api-prefix}/chat/**
+          filters:
+            - StripPrefix=1
+
+        - id: post_service
+          uri: ${POST_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=${app.api-prefix}/post/**
+          filters:
+            - StripPrefix=1
+
+        - id: story_service
+          uri: ${STORY_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=${app.api-prefix}/stories/**
+          filters:
+            - StripPrefix=1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.blur.apigateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    com.blur.apigateway.configuration: DEBUG
+    reactor.netty: INFO
